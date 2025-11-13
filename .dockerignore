@@ -1,0 +1,11 @@
+target/
+.git/
+.github/
+.gitignore
+.idea/
+.vscode/
+*.iml
+node_modules/
+.DS_Store
+Thumbs.db
+docker-compose.override.yml
