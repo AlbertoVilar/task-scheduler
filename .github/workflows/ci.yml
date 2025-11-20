@@ -1,17 +1,13 @@
 name: Java CI com Maven (Daily)
 
 on:
-  # Dispara em push nas branches principais e em feature/*, e em PRs para as principais
+  # Dispara em push nas branches de trabalho e PRs somente contra develop
   push:
     branches:
-      - main
-      - master
       - develop
       - 'feature/**'
   pull_request:
     branches:
-      - main
-      - master
       - develop
   # Permite execução manual pelo Actions
   workflow_dispatch:
