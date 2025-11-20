@@ -1,4 +1,4 @@
-package com.javanauta.taskscheduler.infrastructury.security;
+package com.javanauta.taskscheduler.infrastructure.security;
 
 import org.springframework.security.core.GrantedAuthority;
 
