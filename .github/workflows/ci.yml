@@ -15,6 +15,13 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    services:
+      mongo:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        # Sem autenticação; suficiente para testes de contexto
+        # Healthcheck simples não é necessário; aguardaremos alguns segundos antes do build
 
     steps:
       # 1. Faz o checkout do código
@@ -32,6 +39,10 @@ jobs:
 
       # 3. Executa o build (compila, testa e empacota)
       # O 'install' garante que todos os módulos (se houver) sejam construídos
+      - name: Aguardar MongoDB iniciar
+        run: |
+          echo "Aguardando MongoDB (service) iniciar..."
+          sleep 10
       - name: Executar Build e Testes com Maven
         run: mvn clean install -DskipTests=false
 
