@@ -44,6 +44,10 @@ Notes:
 ## Security
 
 - All endpoints require a valid `Authorization: Bearer <token>` header, except `GET /error` (default Spring error handler).
+- The controller normalizes the `Authorization` header (removes `Bearer` prefix case-insensitively) and rejects empty tokens.
+- The service extracts `userId` from the token and enforces ownership:
+  - `GET/PUT/DELETE /tasks/{id}`: `403 Forbidden` if the task does not belong to the authenticated user.
+  - Listing endpoints return only tasks owned by the authenticated user.
 - Expected JWT claims:
   - `sub`: the user’s email or username
   - `userId`: the user’s unique identifier
@@ -83,7 +87,26 @@ Notes:
 
 - Example: `GET /tasks/691e3ad1e1070c4cf86f3f42`
 - Response (200 OK): same schema as above (`TaskSchedulerResponseDTO`).
-- Errors: `404 Not Found` if id does not exist; `401 Unauthorized` without/invalid token.
+- Errors: `404 Not Found` if id does not exist; `401 Unauthorized` without/invalid token; `403 Forbidden` when the task does not belong to the authenticated user.
+
+`GET /tasks?status=<STATUS>`
+
+- Filters tasks by status for the authenticated user.
+- Query param: `status` (e.g., `PENDING`, `SENT`, `ERROR`)
+- Errors: `400 Bad Request` if status is missing/invalid; `404 Not Found` when no tasks are found; `401 Unauthorized` without/invalid token.
+
+`GET /tasks?startDate=dd-MM-yyyy&endDate=dd-MM-yyyy`
+
+- Returns tasks scheduled between the given dates for the authenticated user.
+- Query params:
+  - `startDate` and `endDate` in `dd-MM-yyyy` format.
+  - Converted to `LocalDateTime` using timezone `America/Sao_Paulo` (start-of-day to end-of-day).
+- Errors: `400 Bad Request` for missing/invalid dates; `404 Not Found` when no tasks are found; `401 Unauthorized` without/invalid token.
+
+`GET /tasks`
+
+- Returns all tasks owned by the authenticated user.
+- Errors: `404 Not Found` when no tasks are found; `401 Unauthorized` without/invalid token.
 
 `DELETE /tasks/{id}`
 
@@ -117,6 +140,20 @@ curl -i http://localhost:9090/tasks/691e3ad1e1070c4cf86f3f42 \
   -H "Authorization: Bearer <JWT>"
 ```
 
+- GET by status:
+
+```
+curl -i "http://localhost:9090/tasks?status=PENDING" \
+  -H "Authorization: Bearer <JWT>"
+```
+
+- GET by date range (`dd-MM-yyyy`):
+
+```
+curl -i "http://localhost:9090/tasks?startDate=01-12-2025&endDate=10-12-2025" \
+  -H "Authorization: Bearer <JWT>"
+```
+
 - Delete by id:
 
 ```
@@ -134,8 +171,8 @@ curl -i -X DELETE http://localhost:9090/tasks/<OTHER_USER_TASK_ID> \
 ## Notes
 
 - Auditing is enabled via `@EnableMongoAuditing`; `creationDate` and `updateDate` are automatically managed.
-- If you need a health endpoint, add Spring Boot Actuator and permit `/actuator/health` in `SecurityConfig`.
- - `GET /tasks/{id}` is available. Optionally restrict access to the task owner (return `403`) if needed.
+ - If you need a health endpoint, add Spring Boot Actuator and permit `/actuator/health` in `SecurityConfig`.
+ - Ownership is enforced across read/update/delete flows. Listing endpoints are scoped to the authenticated user.
 
 ## DTOs
 

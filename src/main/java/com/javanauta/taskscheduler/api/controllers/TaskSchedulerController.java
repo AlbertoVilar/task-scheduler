@@ -22,6 +22,17 @@ public class TaskSchedulerController {
 
     private final TaskService taskService;
 
+    /**
+     * Extrai o token JWT do header Authorization.
+     * <p>
+     * Regras:
+     * - Aceita prefixo "Bearer " (case-insensitive) e remove espaços.
+     * - Lança 401 (UNAUTHORIZED) se o header estiver ausente ou o token for vazio.
+     *
+     * @param authorization valor do header Authorization recebido no endpoint
+     * @return token limpo, sem o prefixo "Bearer " e sem espaços
+     * @throws org.springframework.web.server.ResponseStatusException 401 quando header/token inválido
+     */
     private String extractTokenOrThrow(String authorization) {
         if (authorization == null || authorization.isBlank()) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authorization header ausente");

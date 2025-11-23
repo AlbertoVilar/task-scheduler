@@ -5,16 +5,11 @@ import com.javanauta.taskscheduler.api.dto.TaskSchedulerResponseDTO;
 import com.javanauta.taskscheduler.infrastructure.db.document.repositories.TaskSchedulerRepository;
 import com.javanauta.taskscheduler.infrastructure.entity.TaskEntity;
 import com.javanauta.taskscheduler.infrastructure.enums.NotificationStatusEnum;
-import com.javanauta.taskscheduler.infrastructure.security.CustomUserDetails;
 import com.javanauta.taskscheduler.infrastructure.security.TokenService;
 import com.javanauta.taskscheduler.mappers.TaskSchedulerConverter;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
@@ -22,7 +17,6 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Objects;
 
 @Service
@@ -33,6 +27,17 @@ public class TaskService {
     private final TaskSchedulerConverter converter;
     private final TokenService tokenService;
 
+    /**
+     * Obtém o userId a partir do token JWT e valida sua presença.
+     * <p>
+     * Regras:
+     * - Extrai o claim de userId do token.
+     * - Lança 401 (UNAUTHORIZED) quando o token é nulo, vazio ou não contém userId.
+     *
+     * @param token JWT já limpo (sem prefixo Bearer)
+     * @return userId válido
+     * @throws org.springframework.web.server.ResponseStatusException 401 quando token/userId inválido
+     */
     private String getUserIdOrThrow(String token) {
         String userId = tokenService.getUserIdFromToken(token);
         if (userId == null || userId.isBlank()) {
@@ -41,6 +46,17 @@ public class TaskService {
         return userId;
     }
 
+    /**
+     * Garante que a tarefa pertence ao usuário informado.
+     * <p>
+     * Regras:
+     * - Compara o campo userId da tarefa com o userId do contexto.
+     * - Lança 403 (FORBIDDEN) quando a tarefa não pertence ao usuário.
+     *
+     * @param task   entidade de tarefa já recuperada do repositório
+     * @param userId identificador do usuário autenticado
+     * @throws org.springframework.web.server.ResponseStatusException 403 quando não é o dono
+     */
     private void ensureOwner(TaskEntity task, String userId) {
         if (!Objects.equals(task.getUserId(), userId)) {
             throw new ResponseStatusException(
