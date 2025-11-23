@@ -1,0 +1,24 @@
+name: task-scheduler
+
+services:
+  task-scheduler:
+    image: maven:3.9.9-eclipse-temurin-21-alpine
+    container_name: task-scheduler-dev
+    working_dir: /app
+    volumes:
+      - .:/app
+      - maven_cache:/root/.m2
+    command: mvn -B spring-boot:run
+    environment:
+      - SPRING_DATA_MONGODB_URI=mongodb://mongo:27017/db_agendador
+      - SERVER_PORT=9090
+    ports:
+      - "9090:9090"
+    depends_on:
+      mongo:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  maven_cache:
+    driver: local
