@@ -45,7 +45,7 @@ Notes:
 
 - All endpoints require a valid `Authorization: Bearer <token>` header, except `GET /error` (default Spring error handler).
 - The controller normalizes the `Authorization` header (removes `Bearer` prefix case-insensitively) and rejects empty tokens.
-- The service extracts `userId` from the token and enforces ownership via `AccessGuard`:
+- The controller resolves `userId` via `SecurityService` and the service enforces ownership via `AccessGuard`:
   - `GET/PUT/DELETE /tasks/{id}`: `403 Forbidden` if the task does not belong to the authenticated user.
   - Listing endpoints return only tasks owned by the authenticated user.
 - Custom exception `ForbiddenAccessException` is mapped to `403` by a `@RestControllerAdvice`.
@@ -200,3 +200,23 @@ curl -i -X DELETE http://localhost:9090/tasks/<OTHER_USER_TASK_ID> \
 - Create task (`POST /tasks`) working with auditing and user attribution.
 - Fetch by id (`GET /tasks/{id}`) working.
 - Optional enhancements: request validation, owner restriction, actuator health.
+
+## Future Refinements Backlog
+
+- Exception hierarchy & global handler:
+  - Introduce `NotFoundException` (404) and standardize `ForbiddenAccessException` (403).
+  - Add a `@ControllerAdvice` (`GlobalExceptionHandler`) mapping 400/401/403/404 with a consistent payload: `timestamp`, `status`, `error`, `message`, `path`, `correlationId`.
+- Admin bypass (roles):
+  - Implement `AccessGuard.assertOwnerOrAdmin(TaskEntity, userId)` using `SecurityService.hasRole("ADMIN")` or a dedicated `RoleChecker`.
+  - Document auditing for admin accesses (who/when/what) and ensure traceability.
+- SecurityService improvements:
+  - Expose `extractUsernameOrThrow(String token)` to populate `userEmail` in `createNewTask` when needed.
+  - Standardize claim extraction (`sub`, `email`, `roles`, `scope`) and expiration validation in one place.
+- Observability & logging:
+  - Include `correlationId` in error responses and logs.
+  - Emit access-denied events containing `taskId`, `ownerId`, `userId`, and `isAdmin` for better diagnostics.
+- Tests:
+  - Unit test `AccessGuard` for owner, non-owner, admin bypass, null task, and message content.
+  - Unit test `SecurityService` for valid/expired tokens and missing claims.
+- Documentation & API:
+  - If `userEmail` is required in responses, define the source of truth (token claim vs persisted) and update endpoint examples accordingly.
