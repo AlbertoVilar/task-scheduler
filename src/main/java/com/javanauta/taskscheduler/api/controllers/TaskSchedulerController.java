@@ -53,32 +53,42 @@ public class TaskSchedulerController {
 
 
     @GetMapping("/{id}")
-    public ResponseEntity<TaskSchedulerResponseDTO> findTaskById(@PathVariable String id) {
-        var responseDTO = taskService.findTaskById(id);
+    public ResponseEntity<TaskSchedulerResponseDTO> findTaskById(
+            @RequestHeader("Authorization") String token,
+            @PathVariable String id) {
+
+        String cleanToken = token.replace("Bearer ", "").trim();
+        var responseDTO = taskService.findTaskById(id, cleanToken);
         return ResponseEntity.ok(responseDTO);
     }
 
     // READ BY STATUS (usa query param para evitar ambiguidade com /{id})
     @GetMapping(params = "status")
     public ResponseEntity<List<TaskSchedulerResponseDTO>> findTasksByStatus(
+            @RequestHeader("Authorization") String token,
             @RequestParam NotificationStatusEnum status) {
 
-        return ResponseEntity.ok(taskService.findTasksByStatus(status));
+        String cleanToken = token.replace("Bearer ", "").trim();
+        return ResponseEntity.ok(taskService.findTasksByStatus(cleanToken, status));
     }
 
     // READ BY STATUS (usa query param para evitar ambiguidade com /{id})
     @GetMapping(params = {"startDate", "endDate"})
     public ResponseEntity<List<TaskSchedulerResponseDTO>> findTasksByScheduledDate(
+            @RequestHeader("Authorization") String token,
             @RequestParam @DateTimeFormat(pattern = "dd-MM-yyyy") LocalDate startDate,
             @RequestParam @DateTimeFormat(pattern = "dd-MM-yyyy") LocalDate endDate ) {
 
-        return ResponseEntity.ok(taskService.findTasksByScheduledDate(startDate, endDate));
+        String cleanToken = token.replace("Bearer ", "").trim();
+        return ResponseEntity.ok(taskService.findTasksByScheduledDate(cleanToken, startDate, endDate));
     }
 
     @GetMapping
-    public ResponseEntity<List<TaskSchedulerResponseDTO>> getAllTasks() {
+    public ResponseEntity<List<TaskSchedulerResponseDTO>> getAllTasks(
+            @RequestHeader("Authorization") String token) {
 
-        return ResponseEntity.ok(taskService.getAllTasks());
+        String cleanToken = token.replace("Bearer ", "").trim();
+        return ResponseEntity.ok(taskService.getAllTasks(cleanToken));
     }
 
     @DeleteMapping("/{id}")

@@ -90,7 +90,7 @@ public class TaskService {
     }
 
     // READ BY ID
-    public TaskSchedulerResponseDTO findTaskById(String id) {
+    public TaskSchedulerResponseDTO findTaskById(String id, String token) {
 
         if (id == null || id.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O Id não pode ser nulo ou vazio.");
@@ -99,18 +99,27 @@ public class TaskService {
         var task = schedulerRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tarefa não encontrada"));
 
+        String userId = tokenService.getUserIdFromToken(token);
+        if (!task.getUserId().equals(userId)) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "Você não tem permissão para visualizar esta tarefa"
+            );
+        }
+
         return converter.toDTO(task);
 
     }
 
     // READ BY STATUS
-    public List<TaskSchedulerResponseDTO> findTasksByStatus(NotificationStatusEnum status) {
+    public List<TaskSchedulerResponseDTO> findTasksByStatus(String token, NotificationStatusEnum status) {
 
         if (status == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O Status não pode ser nulo ou vazio.");
         }
 
-        List<TaskEntity> entities = schedulerRepository.findByStatus(status);
+        String userId = tokenService.getUserIdFromToken(token);
+        List<TaskEntity> entities = schedulerRepository.findByUserIdAndStatus(userId, status);
         if (entities.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Nenhuma task encontrada com o status informado.");
         }
@@ -120,7 +129,8 @@ public class TaskService {
     }
 
     // LIST BY START AND END DATE
-    public List<TaskSchedulerResponseDTO> findTasksByScheduledDate(LocalDate startDate,
+    public List<TaskSchedulerResponseDTO> findTasksByScheduledDate(String token,
+                                                                   LocalDate startDate,
                                                                    LocalDate endDate) {
         if (startDate == null || endDate == null) {
             throw new IllegalArgumentException("As datas não podem ser nulas.");
@@ -130,15 +140,17 @@ public class TaskService {
         LocalDateTime startDateTime = startDate.atStartOfDay(zone).toLocalDateTime();
         LocalDateTime endDateTime = endDate.atTime(LocalTime.MAX).atZone(zone).toLocalDateTime();
 
-        List<TaskEntity> tasks = schedulerRepository.findByScheduledDateBetween(startDateTime, endDateTime);
+        String userId = tokenService.getUserIdFromToken(token);
+        List<TaskEntity> tasks = schedulerRepository.findByUserIdAndScheduledDateBetween(userId, startDateTime, endDateTime);
 
         return tasks.stream().map(converter::toDTO).toList();
     }
 
     // LIST
-    public List<TaskSchedulerResponseDTO> getAllTasks() {
+    public List<TaskSchedulerResponseDTO> getAllTasks(String token) {
 
-        List<TaskEntity> tasks = schedulerRepository.findAll();
+        String userId = tokenService.getUserIdFromToken(token);
+        List<TaskEntity> tasks = schedulerRepository.findByUserId(userId);
         if (tasks.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Nenhuma task encontrada com o status informado.");
         }

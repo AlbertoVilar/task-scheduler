@@ -14,5 +14,10 @@ public interface TaskSchedulerRepository extends MongoRepository<TaskEntity, Str
     // Lista por Status
     List<TaskEntity> findByStatus(NotificationStatusEnum status);
 
+    // Escopo por usuário
+    List<TaskEntity> findByUserId(String userId);
+    List<TaskEntity> findByUserIdAndStatus(String userId, NotificationStatusEnum status);
+    List<TaskEntity> findByUserIdAndScheduledDateBetween(String userId, LocalDateTime startDate, LocalDateTime endDate);
+
     List<TaskEntity> findByScheduledDateBetween(LocalDateTime startDate, LocalDateTime endDate);
 }
