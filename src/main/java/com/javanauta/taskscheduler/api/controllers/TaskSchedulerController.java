@@ -67,7 +67,7 @@ public class TaskSchedulerController {
     }
 
     // READ BY STATUS (usa query param para evitar ambiguidade com /{id})
-    @GetMapping(params = "startDate&endDate")
+    @GetMapping(params = {"startDate", "endDate"})
     public ResponseEntity<List<TaskSchedulerResponseDTO>> findTasksByScheduledDate(
             @RequestParam @DateTimeFormat(pattern = "dd-MM-yyyy") LocalDate startDate,
             @RequestParam @DateTimeFormat(pattern = "dd-MM-yyyy") LocalDate endDate ) {
