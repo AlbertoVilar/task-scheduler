@@ -49,7 +49,7 @@ Notes:
   - `GET/PUT/DELETE /tasks/{id}`: `403 Forbidden` if the task does not belong to the authenticated user.
   - Listing endpoints return only tasks owned by the authenticated user.
 - Custom exception `ForbiddenAccessException` is mapped to `403` by a `@RestControllerAdvice`.
-- Future: an admin bypass (`ensureOwnerOrAdmin`) can allow `ROLE_ADMIN` to access any task.
+- Future: an admin bypass (`assertOwnerOrAdmin`) can allow `ROLE_ADMIN` to access any task.
 - Expected JWT claims:
   - `sub`: the user’s email or username
   - `userId`: the user’s unique identifier

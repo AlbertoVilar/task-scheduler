@@ -15,22 +15,34 @@ import java.util.Objects;
 public class AccessGuard {
 
     /**
-     * Garante que a tarefa pertence ao usuário informado.
+     * Asserta que a tarefa pertence ao usuário informado.
      * Lança ForbiddenAccessException (HTTP 403) caso contrário.
      */
-    public void ensureOwner(TaskEntity task, String userId) {
+    public void assertOwner(TaskEntity task, String userId) {
+        if (task == null) {
+            throw new IllegalArgumentException("Task não pode ser nula no AccessGuard");
+        }
         if (!Objects.equals(task.getUserId(), userId)) {
-            throw new ForbiddenAccessException("Você não tem permissão para acessar esta tarefa");
+            throw new ForbiddenAccessException(
+                    "Você não tem permissão para acessar a tarefa id="
+                            + task.getId() + " (owner=" + task.getUserId() + ", user=" + userId + ")"
+            );
         }
     }
 
     /**
-     * Garante que a tarefa pertence ao usuário, permitindo bypass quando isAdmin=true.
+     * Asserta que a tarefa pertence ao usuário, permitindo bypass quando isAdmin=true.
      * Útil para cenários futuros com ROLE_ADMIN.
      */
-    public void ensureOwnerOrAdmin(TaskEntity task, String userId, boolean isAdmin) {
+    public void assertOwnerOrAdmin(TaskEntity task, String userId, boolean isAdmin) {
+        if (task == null) {
+            throw new IllegalArgumentException("Task não pode ser nula no AccessGuard");
+        }
         if (!isAdmin && !Objects.equals(task.getUserId(), userId)) {
-            throw new ForbiddenAccessException("Acesso negado");
+            throw new ForbiddenAccessException(
+                    "Acesso negado à tarefa id=" + task.getId() +
+                            " (owner=" + task.getUserId() + ", user=" + userId + ", isAdmin=" + isAdmin + ")"
+            );
         }
     }
 }

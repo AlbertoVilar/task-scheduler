@@ -60,7 +60,7 @@ public class TaskService {
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "Tarefa não encontrada"));
 
-        accessGuard.ensureOwner(task, userId);
+        accessGuard.assertOwner(task, userId);
 
         try {
             converter.updateTaskEntity(task, taskDTO);
@@ -82,7 +82,7 @@ public class TaskService {
         var task = schedulerRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tarefa não encontrada"));
 
-        accessGuard.ensureOwner(task, userId);
+        accessGuard.assertOwner(task, userId);
 
         return converter.toDTO(task);
 
@@ -142,7 +142,7 @@ public class TaskService {
                 .orElseThrow(() ->
                         new ResponseStatusException(HttpStatus.NOT_FOUND, "Tarefa não encontrada"));
 
-        accessGuard.ensureOwner(task, userId);
+        accessGuard.assertOwner(task, userId);
 
         schedulerRepository.delete(task);
     }
