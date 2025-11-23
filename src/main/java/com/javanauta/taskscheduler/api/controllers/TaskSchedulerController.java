@@ -8,9 +8,11 @@ import com.javanauta.taskscheduler.infrastructure.enums.NotificationStatusEnum;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -62,6 +64,15 @@ public class TaskSchedulerController {
             @RequestParam NotificationStatusEnum status) {
 
         return ResponseEntity.ok(taskService.findTasksByStatus(status));
+    }
+
+    // READ BY STATUS (usa query param para evitar ambiguidade com /{id})
+    @GetMapping(params = "startDate&endDate")
+    public ResponseEntity<List<TaskSchedulerResponseDTO>> findTasksByScheduledDate(
+            @RequestParam @DateTimeFormat(pattern = "dd-MM-yyyy") LocalDate startDate,
+            @RequestParam @DateTimeFormat(pattern = "dd-MM-yyyy") LocalDate endDate ) {
+
+        return ResponseEntity.ok(taskService.findTasksByScheduledDate(startDate, endDate));
     }
 
     @GetMapping

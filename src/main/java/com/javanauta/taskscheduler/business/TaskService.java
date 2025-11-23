@@ -17,6 +17,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -115,16 +119,31 @@ public class TaskService {
 
     }
 
+    // LIST BY START AND END DATE
+    public List<TaskSchedulerResponseDTO> findTasksByScheduledDate(LocalDate startDate,
+                                                                   LocalDate endDate) {
+        if (startDate == null || endDate == null) {
+            throw new IllegalArgumentException("As datas não podem ser nulas.");
+
+        }
+        ZoneId zone = ZoneId.of("America/Sao_Paulo");
+        LocalDateTime startDateTime = startDate.atStartOfDay(zone).toLocalDateTime();
+        LocalDateTime endDateTime = endDate.atTime(LocalTime.MAX).atZone(zone).toLocalDateTime();
+
+        List<TaskEntity> tasks = schedulerRepository.findByScheduledDateBetween(startDateTime, endDateTime);
+
+        return tasks.stream().map(converter::toDTO).toList();
+    }
+
     // LIST
     public List<TaskSchedulerResponseDTO> getAllTasks() {
 
-
-        List<TaskEntity> entities = schedulerRepository.findAll();
-        if (entities.isEmpty()) {
+        List<TaskEntity> tasks = schedulerRepository.findAll();
+        if (tasks.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Nenhuma task encontrada com o status informado.");
         }
 
-        return entities.stream().map(converter::toDTO).toList();
+        return tasks.stream().map(converter::toDTO).toList();
     }
 
     // DELETE
