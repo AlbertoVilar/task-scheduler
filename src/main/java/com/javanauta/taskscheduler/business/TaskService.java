@@ -33,6 +33,23 @@ public class TaskService {
     private final TaskSchedulerConverter converter;
     private final TokenService tokenService;
 
+    private String getUserIdOrThrow(String token) {
+        String userId = tokenService.getUserIdFromToken(token);
+        if (userId == null || userId.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token inválido ou ausente");
+        }
+        return userId;
+    }
+
+    private void ensureOwner(TaskEntity task, String userId) {
+        if (!Objects.equals(task.getUserId(), userId)) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "Você não tem permissão para acessar esta tarefa"
+            );
+        }
+    }
+
     // CREATE
     public TaskSchedulerResponseDTO createNewTask(String token, TaskSchedulerRequestDTO taskDTO) {
 
@@ -42,7 +59,7 @@ public class TaskService {
 
         // 1. Extrai o dono da tarefa
         String userEmail = tokenService.getUsernameFromToken(token);
-        String userId = tokenService.getUserIdFromToken(token);
+        String userId = getUserIdOrThrow(token);
 
         // 2. Converte o DTO para Entidade
         var taskEntity = converter.toEntity(taskDTO);
@@ -70,14 +87,8 @@ public class TaskService {
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "Tarefa não encontrada"));
 
-        String userId = tokenService.getUserIdFromToken(token);
-
-        if (!task.getUserId().equals(userId)) {
-            throw new ResponseStatusException(
-                    HttpStatus.FORBIDDEN,
-                    "Você não tem permissão para atualizar esta tarefa"
-            );
-        }
+        String userId = getUserIdOrThrow(token);
+        ensureOwner(task, userId);
 
         try {
             converter.updateTaskEntity(task, taskDTO);
@@ -99,13 +110,8 @@ public class TaskService {
         var task = schedulerRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tarefa não encontrada"));
 
-        String userId = tokenService.getUserIdFromToken(token);
-        if (!task.getUserId().equals(userId)) {
-            throw new ResponseStatusException(
-                    HttpStatus.FORBIDDEN,
-                    "Você não tem permissão para visualizar esta tarefa"
-            );
-        }
+        String userId = getUserIdOrThrow(token);
+        ensureOwner(task, userId);
 
         return converter.toDTO(task);
 
@@ -118,7 +124,7 @@ public class TaskService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O Status não pode ser nulo ou vazio.");
         }
 
-        String userId = tokenService.getUserIdFromToken(token);
+        String userId = getUserIdOrThrow(token);
         List<TaskEntity> entities = schedulerRepository.findByUserIdAndStatus(userId, status);
         if (entities.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Nenhuma task encontrada com o status informado.");
@@ -140,7 +146,7 @@ public class TaskService {
         LocalDateTime startDateTime = startDate.atStartOfDay(zone).toLocalDateTime();
         LocalDateTime endDateTime = endDate.atTime(LocalTime.MAX).atZone(zone).toLocalDateTime();
 
-        String userId = tokenService.getUserIdFromToken(token);
+        String userId = getUserIdOrThrow(token);
         List<TaskEntity> tasks = schedulerRepository.findByUserIdAndScheduledDateBetween(userId, startDateTime, endDateTime);
 
         return tasks.stream().map(converter::toDTO).toList();
@@ -148,8 +154,7 @@ public class TaskService {
 
     // LIST
     public List<TaskSchedulerResponseDTO> getAllTasks(String token) {
-
-        String userId = tokenService.getUserIdFromToken(token);
+        String userId = getUserIdOrThrow(token);
         List<TaskEntity> tasks = schedulerRepository.findByUserId(userId);
         if (tasks.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Nenhuma task encontrada com o status informado.");
@@ -165,18 +170,13 @@ public class TaskService {
             throw new IllegalArgumentException("Id não pode ser nulo ou vazio");
         }
 
-        String userId = tokenService.getUserIdFromToken(token);
+        String userId = getUserIdOrThrow(token);
 
         var task = schedulerRepository.findById(id)
                 .orElseThrow(() ->
                         new ResponseStatusException(HttpStatus.NOT_FOUND, "Tarefa não encontrada"));
 
-        if (!task.getUserId().equals(userId)) {
-            throw new ResponseStatusException(
-                    HttpStatus.FORBIDDEN,
-                    "Você não tem permissão para deletar esta tarefa"
-            );
-        }
+        ensureOwner(task, userId);
 
         schedulerRepository.delete(task);
     }
