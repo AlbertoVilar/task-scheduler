@@ -5,12 +5,13 @@ import com.javanauta.taskscheduler.api.dto.TaskSchedulerResponseDTO;
 import com.javanauta.taskscheduler.business.TaskService;
 import com.javanauta.taskscheduler.infrastructure.entity.TaskEntity;
 import com.javanauta.taskscheduler.infrastructure.enums.NotificationStatusEnum;
+import com.javanauta.taskscheduler.security.TokenCleaner;
+import com.javanauta.taskscheduler.security.SecurityService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -21,27 +22,11 @@ import java.util.List;
 public class TaskSchedulerController {
 
     private final TaskService taskService;
+    private final TokenCleaner tokenCleaner;
+    private final SecurityService securityService;
 
-    /**
-     * Extrai o token JWT do header Authorization.
-     * <p>
-     * Regras:
-     * - Aceita prefixo "Bearer " (case-insensitive) e remove espaços.
-     * - Lança 401 (UNAUTHORIZED) se o header estiver ausente ou o token for vazio.
-     *
-     * @param authorization valor do header Authorization recebido no endpoint
-     * @return token limpo, sem o prefixo "Bearer " e sem espaços
-     * @throws org.springframework.web.server.ResponseStatusException 401 quando header/token inválido
-     */
-    private String extractTokenOrThrow(String authorization) {
-        if (authorization == null || authorization.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authorization header ausente");
-        }
-        String clean = authorization.replaceFirst("(?i)^Bearer\\s+", "").trim();
-        if (clean.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token inválido");
-        }
-        return clean;
+    private String extractUser(String token) {
+        return securityService.extractUserIdOrThrow(tokenCleaner.clean(token));
     }
 
     @PostMapping
@@ -49,11 +34,10 @@ public class TaskSchedulerController {
                 @RequestHeader("Authorization") String token,
                 @RequestBody TaskSchedulerRequestDTO taskDTO) {
 
-        String cleanToken = extractTokenOrThrow(token);
+        String userId = extractUser(token);
 
-       var responseDTO = taskService.createNewTask(cleanToken, taskDTO);
+        var responseDTO = taskService.createNewTask(userId, taskDTO);
 
-        // Passa o token limpinho para o serviço
         return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
 
     }
@@ -64,9 +48,9 @@ public class TaskSchedulerController {
             @RequestHeader("Authorization") String token,
             @PathVariable String id,
             @RequestBody TaskSchedulerRequestDTO taskDTO) {
-        String cleanToken = extractTokenOrThrow(token);
+        String userId = extractUser(token);
 
-        var responseDTO = taskService.updateTask(id, cleanToken, taskDTO);
+        var responseDTO = taskService.updateTask(id, userId, taskDTO);
         return ResponseEntity.ok(responseDTO);
     }
 
@@ -75,8 +59,8 @@ public class TaskSchedulerController {
     public ResponseEntity<TaskSchedulerResponseDTO> findTaskById(
             @RequestHeader("Authorization") String token,
             @PathVariable String id) {
-        String cleanToken = extractTokenOrThrow(token);
-        var responseDTO = taskService.findTaskById(id, cleanToken);
+        String userId = extractUser(token);
+        var responseDTO = taskService.findTaskById(id, userId);
         return ResponseEntity.ok(responseDTO);
     }
 
@@ -85,8 +69,8 @@ public class TaskSchedulerController {
     public ResponseEntity<List<TaskSchedulerResponseDTO>> findTasksByStatus(
             @RequestHeader("Authorization") String token,
             @RequestParam NotificationStatusEnum status) {
-        String cleanToken = extractTokenOrThrow(token);
-        return ResponseEntity.ok(taskService.findTasksByStatus(cleanToken, status));
+        String userId = extractUser(token);
+        return ResponseEntity.ok(taskService.findTasksByStatus(userId, status));
     }
 
     // READ BY STATUS (usa query param para evitar ambiguidade com /{id})
@@ -95,23 +79,23 @@ public class TaskSchedulerController {
             @RequestHeader("Authorization") String token,
             @RequestParam @DateTimeFormat(pattern = "dd-MM-yyyy") LocalDate startDate,
             @RequestParam @DateTimeFormat(pattern = "dd-MM-yyyy") LocalDate endDate ) {
-        String cleanToken = extractTokenOrThrow(token);
-        return ResponseEntity.ok(taskService.findTasksByScheduledDate(cleanToken, startDate, endDate));
+        String userId = extractUser(token);
+        return ResponseEntity.ok(taskService.findTasksByScheduledDate(userId, startDate, endDate));
     }
 
     @GetMapping
     public ResponseEntity<List<TaskSchedulerResponseDTO>> getAllTasks(
             @RequestHeader("Authorization") String token) {
-        String cleanToken = extractTokenOrThrow(token);
-        return ResponseEntity.ok(taskService.getAllTasks(cleanToken));
+        String userId = extractUser(token);
+        return ResponseEntity.ok(taskService.getAllTasks(userId));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteTask(
             @RequestHeader("Authorization") String token,
             @PathVariable String id) {
-        String cleanToken = extractTokenOrThrow(token);
-        taskService.deleteTask(cleanToken, id);
+        String userId = extractUser(token);
+        taskService.deleteTask(userId, id);
 
         return ResponseEntity.noContent().build();
     }
