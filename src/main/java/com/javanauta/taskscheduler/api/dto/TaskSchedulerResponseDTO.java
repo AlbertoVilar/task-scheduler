@@ -6,7 +6,7 @@ import lombok.Builder;
 import java.time.LocalDateTime;
 
 @Builder
-public record TaskSchedulerDTO(
+public record TaskSchedulerResponseDTO(
         String id,
         String taskName,
         String description,
@@ -14,6 +14,6 @@ public record TaskSchedulerDTO(
         LocalDateTime scheduledDate,
         LocalDateTime updateDate,
         String userEmail,
-        NotificationStatusEnum status) {
-}
-
+        String userId,
+        NotificationStatusEnum status
+) {}

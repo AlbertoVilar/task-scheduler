@@ -1,6 +1,7 @@
 package com.javanauta.taskscheduler.mappers;
 
-import com.javanauta.taskscheduler.api.dto.TaskSchedulerDTO;
+import com.javanauta.taskscheduler.api.dto.TaskSchedulerRequestDTO;
+import com.javanauta.taskscheduler.api.dto.TaskSchedulerResponseDTO;
 import com.javanauta.taskscheduler.infrastructure.entity.TaskEntity;
 import com.javanauta.taskscheduler.infrastructure.enums.NotificationStatusEnum;
 import org.springframework.stereotype.Component;
@@ -9,21 +10,28 @@ import org.springframework.stereotype.Component;
 @Component
 public class TaskSchedulerConverter { // 1. Corrigido o nome (Converter)
 
-
-    public TaskEntity toEntity(TaskSchedulerDTO dto) {
-        return TaskEntity.builder()
-
-                .taskName(dto.taskName())
-                .description(dto.description())
-                .scheduledDate(dto.scheduledDate())
-                .userEmail(dto.userEmail())
-                .status(NotificationStatusEnum.PENDING)
-                .build();
+    public TaskEntity toEntity(TaskSchedulerRequestDTO dto) {
+        TaskEntity entity = new TaskEntity();
+        entity.setTaskName(dto.taskName());
+        entity.setDescription(dto.description());
+        entity.setScheduledDate(dto.scheduledDate());
+        entity.setStatus(NotificationStatusEnum.PENDING);
+        return entity;
     }
 
-    public TaskSchedulerDTO toDTO(TaskEntity entity) {
+    public void updateTaskEntity (TaskEntity entity, TaskSchedulerRequestDTO dto) {
 
-        return TaskSchedulerDTO.builder()
+        if (dto == null) {
+            throw new IllegalArgumentException("O objeto da requisição (dto) não pode ser nulo.");
+        }
+        entity.setTaskName( (dto.taskName() != null) ? dto.taskName() : entity.getTaskName());
+        entity.setDescription( (dto.description() != null) ? dto.description() : entity.getDescription());
+        entity.setScheduledDate( (dto.scheduledDate() != null) ? dto.scheduledDate() : entity.getScheduledDate());
+
+    }
+
+    public TaskSchedulerResponseDTO toDTO(TaskEntity entity) {
+        return TaskSchedulerResponseDTO.builder()
                 .id(entity.getId())
                 .taskName(entity.getTaskName())
                 .description(entity.getDescription())
@@ -31,6 +39,7 @@ public class TaskSchedulerConverter { // 1. Corrigido o nome (Converter)
                 .scheduledDate(entity.getScheduledDate())
                 .updateDate(entity.getUpdateDate())
                 .userEmail(entity.getUserEmail())
+                .userId(entity.getUserId())
                 .status(entity.getStatus())
                 .build();
         }
