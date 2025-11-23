@@ -1,0 +1,47 @@
+version: "3.8"
+name: task-scheduler
+
+services:
+  task-scheduler:
+    build: .
+    image: task-scheduler:local
+    container_name: task-scheduler
+    environment:
+      - JAVA_OPTS=-Dspring.data.mongodb.uri=mongodb://mongo:27017/db_agendador -Dserver.port=9090
+    ports:
+      - "9090:9090"
+    depends_on:
+      mongo:
+        condition: service_healthy
+    restart: unless-stopped
+
+  mongo:
+    image: mongo:7
+    container_name: task-scheduler-mongo
+    ports:
+      - "27017:27017"
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.runCommand({ ping: 1 })"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    volumes:
+      - mongo_data:/data/db
+    restart: unless-stopped
+
+  mongo-express:
+    image: mongo-express:latest
+    container_name: task-scheduler-mongo-express
+    ports:
+      - "8081:8081"
+    environment:
+      - ME_CONFIG_MONGODB_URL=mongodb://mongo:27017/
+      - ME_CONFIG_BASICAUTH=false
+    depends_on:
+      mongo:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  mongo_data:
+    driver: local
