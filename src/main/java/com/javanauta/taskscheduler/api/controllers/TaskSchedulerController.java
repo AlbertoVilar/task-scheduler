@@ -3,10 +3,13 @@ package com.javanauta.taskscheduler.api.controllers;
 import com.javanauta.taskscheduler.api.dto.TaskSchedulerRequestDTO;
 import com.javanauta.taskscheduler.api.dto.TaskSchedulerResponseDTO;
 import com.javanauta.taskscheduler.business.TaskService;
+import com.javanauta.taskscheduler.infrastructure.entity.TaskEntity;
+import com.javanauta.taskscheduler.infrastructure.enums.NotificationStatusEnum;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -51,6 +54,14 @@ public class TaskSchedulerController {
     public ResponseEntity<TaskSchedulerResponseDTO> findTaskById(@PathVariable String id) {
         var responseDTO = taskService.findTaskById(id);
         return ResponseEntity.ok(responseDTO);
+    }
+
+    // READ BY STATUS (usa query param para evitar ambiguidade com /{id})
+    @GetMapping(params = "status")
+    public ResponseEntity<List<TaskSchedulerResponseDTO>> findTasksByStatus(
+            @RequestParam NotificationStatusEnum status) {
+
+        return ResponseEntity.ok(taskService.findTasksByStatus(status));
     }
 
     @GetMapping

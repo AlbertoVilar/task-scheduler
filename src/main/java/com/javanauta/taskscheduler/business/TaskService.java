@@ -4,6 +4,7 @@ import com.javanauta.taskscheduler.api.dto.TaskSchedulerRequestDTO;
 import com.javanauta.taskscheduler.api.dto.TaskSchedulerResponseDTO;
 import com.javanauta.taskscheduler.infrastructure.db.document.repositories.TaskSchedulerRepository;
 import com.javanauta.taskscheduler.infrastructure.entity.TaskEntity;
+import com.javanauta.taskscheduler.infrastructure.enums.NotificationStatusEnum;
 import com.javanauta.taskscheduler.infrastructure.security.CustomUserDetails;
 import com.javanauta.taskscheduler.infrastructure.security.TokenService;
 import com.javanauta.taskscheduler.mappers.TaskSchedulerConverter;
@@ -98,10 +99,31 @@ public class TaskService {
 
     }
 
+    // READ BY STATUS
+    public List<TaskSchedulerResponseDTO> findTasksByStatus(NotificationStatusEnum status) {
+
+        if (status == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O Status não pode ser nulo ou vazio.");
+        }
+
+        List<TaskEntity> entities = schedulerRepository.findByStatus(status);
+        if (entities.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Nenhuma task encontrada com o status informado.");
+        }
+
+        return entities.stream().map(converter::toDTO).toList();
+
+    }
+
     // LIST
     public List<TaskSchedulerResponseDTO> getAllTasks() {
 
+
         List<TaskEntity> entities = schedulerRepository.findAll();
+        if (entities.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Nenhuma task encontrada com o status informado.");
+        }
+
         return entities.stream().map(converter::toDTO).toList();
     }
 
