@@ -28,7 +28,7 @@ public class TaskService {
     private final AccessGuard accessGuard;
 
     // CREATE
-    public TaskSchedulerResponseDTO createNewTask(String userId, TaskSchedulerRequestDTO taskDTO) {
+    public TaskSchedulerResponseDTO createNewTask(String userId, String userEmail, TaskSchedulerRequestDTO taskDTO) {
 
         if (taskDTO == null) {
             throw new IllegalArgumentException("O objeto da requisição (taskDTO) não pode ser nulo.");
@@ -37,8 +37,11 @@ public class TaskService {
         // 1. Converte o DTO para Entidade
         var taskEntity = converter.toEntity(taskDTO);
 
-        // 2. Define o dono da tarefa a partir do userId já validado na Controller
+        // 2. Define o dono da tarefa e email do usuário a partir do token já validado na Controller
         taskEntity.setUserId(userId);
+        if (userEmail != null && !userEmail.isBlank()) {
+            taskEntity.setUserEmail(userEmail);
+        }
 
         // 3. Salva a entidade completa
         var taskSaved = schedulerRepository.save(taskEntity);
@@ -49,6 +52,7 @@ public class TaskService {
     // UPDATE
     public TaskSchedulerResponseDTO updateTask(String id,
                                                String userId,
+                                               String userEmail,
                                                TaskSchedulerRequestDTO taskDTO) {
 
         if (id == null || id.isBlank()) {
@@ -66,6 +70,11 @@ public class TaskService {
             converter.updateTaskEntity(task, taskDTO);
         } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+        }
+
+        // Preenche o email do usuário caso ainda esteja nulo na entidade (migração/retrocompatibilidade)
+        if ((task.getUserEmail() == null || task.getUserEmail().isBlank()) && userEmail != null && !userEmail.isBlank()) {
+            task.setUserEmail(userEmail);
         }
 
         var updated = schedulerRepository.save(task);

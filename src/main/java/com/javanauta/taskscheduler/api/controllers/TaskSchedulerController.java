@@ -34,9 +34,11 @@ public class TaskSchedulerController {
                 @RequestHeader("Authorization") String token,
                 @RequestBody TaskSchedulerRequestDTO taskDTO) {
 
-        String userId = extractUser(token);
+        String cleaned = tokenCleaner.clean(token);
+        String userId = securityService.extractUserIdOrThrow(cleaned);
+        String userEmail = securityService.extractUsernameOrThrow(cleaned);
 
-        var responseDTO = taskService.createNewTask(userId, taskDTO);
+        var responseDTO = taskService.createNewTask(userId, userEmail, taskDTO);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
 
@@ -48,9 +50,11 @@ public class TaskSchedulerController {
             @RequestHeader("Authorization") String token,
             @PathVariable String id,
             @RequestBody TaskSchedulerRequestDTO taskDTO) {
-        String userId = extractUser(token);
+        String cleaned = tokenCleaner.clean(token);
+        String userId = securityService.extractUserIdOrThrow(cleaned);
+        String userEmail = securityService.extractUsernameOrThrow(cleaned);
 
-        var responseDTO = taskService.updateTask(id, userId, taskDTO);
+        var responseDTO = taskService.updateTask(id, userId, userEmail, taskDTO);
         return ResponseEntity.ok(responseDTO);
     }
 

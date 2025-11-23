@@ -25,4 +25,16 @@ public class SecurityService {
         }
         return userId;
     }
+
+    /**
+     * Extrai o username/email (subject) do token JWT e valida sua presença.
+     * Lança 401 (UNAUTHORIZED) quando o token é nulo, vazio ou não contém username.
+     */
+    public String extractUsernameOrThrow(String token) {
+        String username = tokenService.getUsernameFromToken(token);
+        if (username == null || username.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token inválido ou ausente");
+        }
+        return username;
+    }
 }
