@@ -7,6 +7,7 @@ import com.javanauta.taskscheduler.infrastructure.entity.TaskEntity;
 import com.javanauta.taskscheduler.infrastructure.enums.NotificationStatusEnum;
 import com.javanauta.taskscheduler.infrastructure.security.TokenService;
 import com.javanauta.taskscheduler.mappers.TaskSchedulerConverter;
+import com.javanauta.taskscheduler.business.security.AccessGuard;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -17,7 +18,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.List;
-import java.util.Objects;
+ 
 
 @Service
 @AllArgsConstructor
@@ -26,6 +27,7 @@ public class TaskService {
     private final TaskSchedulerRepository schedulerRepository;
     private final TaskSchedulerConverter converter;
     private final TokenService tokenService;
+    private final AccessGuard accessGuard;
 
     /**
      * Obtém o userId a partir do token JWT e valida sua presença.
@@ -46,25 +48,6 @@ public class TaskService {
         return userId;
     }
 
-    /**
-     * Garante que a tarefa pertence ao usuário informado.
-     * <p>
-     * Regras:
-     * - Compara o campo userId da tarefa com o userId do contexto.
-     * - Lança 403 (FORBIDDEN) quando a tarefa não pertence ao usuário.
-     *
-     * @param task   entidade de tarefa já recuperada do repositório
-     * @param userId identificador do usuário autenticado
-     * @throws org.springframework.web.server.ResponseStatusException 403 quando não é o dono
-     */
-    private void ensureOwner(TaskEntity task, String userId) {
-        if (!Objects.equals(task.getUserId(), userId)) {
-            throw new ResponseStatusException(
-                    HttpStatus.FORBIDDEN,
-                    "Você não tem permissão para acessar esta tarefa"
-            );
-        }
-    }
 
     // CREATE
     public TaskSchedulerResponseDTO createNewTask(String token, TaskSchedulerRequestDTO taskDTO) {
@@ -104,7 +87,7 @@ public class TaskService {
                         HttpStatus.NOT_FOUND, "Tarefa não encontrada"));
 
         String userId = getUserIdOrThrow(token);
-        ensureOwner(task, userId);
+        accessGuard.ensureOwner(task, userId);
 
         try {
             converter.updateTaskEntity(task, taskDTO);
@@ -127,7 +110,7 @@ public class TaskService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tarefa não encontrada"));
 
         String userId = getUserIdOrThrow(token);
-        ensureOwner(task, userId);
+        accessGuard.ensureOwner(task, userId);
 
         return converter.toDTO(task);
 
@@ -192,7 +175,7 @@ public class TaskService {
                 .orElseThrow(() ->
                         new ResponseStatusException(HttpStatus.NOT_FOUND, "Tarefa não encontrada"));
 
-        ensureOwner(task, userId);
+        accessGuard.ensureOwner(task, userId);
 
         schedulerRepository.delete(task);
     }

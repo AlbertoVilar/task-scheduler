@@ -45,9 +45,11 @@ Notes:
 
 - All endpoints require a valid `Authorization: Bearer <token>` header, except `GET /error` (default Spring error handler).
 - The controller normalizes the `Authorization` header (removes `Bearer` prefix case-insensitively) and rejects empty tokens.
-- The service extracts `userId` from the token and enforces ownership:
+- The service extracts `userId` from the token and enforces ownership via `AccessGuard`:
   - `GET/PUT/DELETE /tasks/{id}`: `403 Forbidden` if the task does not belong to the authenticated user.
   - Listing endpoints return only tasks owned by the authenticated user.
+- Custom exception `ForbiddenAccessException` is mapped to `403` by a `@RestControllerAdvice`.
+- Future: an admin bypass (`ensureOwnerOrAdmin`) can allow `ROLE_ADMIN` to access any task.
 - Expected JWT claims:
   - `sub`: the user’s email or username
   - `userId`: the user’s unique identifier
